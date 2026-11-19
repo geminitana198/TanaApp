@@ -2,7 +2,9 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#221e1b" media="(prefers-color-scheme: dark)">
   <title>TanaApp – Học tiếng Trung</title>
   <meta name="description" content="Học tiếng Trung bằng flashcard, ôn tập lặp lại ngắt quãng, tập viết và xem thứ tự nét viết mẫu.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23c0392b'/><text x='50' y='72' font-size='64' text-anchor='middle' fill='white'>学</text></svg>">
@@ -14,13 +16,14 @@
     <nav class="nav">
       <a href="#/" data-route="">🏠 <span>Trang chủ</span></a>
       <a href="#/vocab" data-route="vocab">📚 <span>Từ vựng</span></a>
-      <a href="#/grammar" data-route="grammar">📝 <span>Ngữ pháp</span></a>
-      <a href="#/study" data-route="study">⭐ <span>Cần học</span><b id="studyCount" class="count"></b></a>
-      <a href="#/flashcards" data-route="flashcards">🃏 <span>Flashcard</span></a>
+      <a href="#/grammar" data-route="grammar" class="sec">📝 <span>Ngữ pháp</span></a>
+      <a href="#/study" data-route="study" class="sec">⭐ <span>Cần học</span><b id="studyCount" class="count"></b></a>
+      <a href="#/flashcards" data-route="flashcards" class="sec">🃏 <span>Flashcard</span></a>
       <a href="#/review" data-route="review">🔁 <span>Ôn tập</span></a>
       <a href="#/write" data-route="write">✍️ <span>Tập viết</span></a>
-      <a href="#/guide" data-route="guide">📖 <span>Viết mẫu</span></a>
-      <a href="#/decks" data-route="decks">⚙️ <span>Quản lý</span></a>
+      <a href="#/guide" data-route="guide" class="sec">📖 <span>Viết mẫu</span></a>
+      <a href="#/decks" data-route="decks" class="sec">⚙️ <span>Quản lý</span></a>
+      <button type="button" id="navMore" class="nav-more" aria-expanded="false">☰ <span>Thêm</span></button>
     </nav>
   </header>
 

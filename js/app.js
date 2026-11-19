@@ -990,10 +990,20 @@
     const [path, query] = location.hash.replace(/^#\/?/, '').split('?');
     const route = routes[path] ? path : '';
     $$('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.route === (navOf[route] ?? route)));
+    $('#navMore').classList.toggle('active', !!$('.nav a.sec.active'));
+    setNavOpen(false);
     routes[route](new URLSearchParams(query || ''));
     updateStudyUI();
     window.scrollTo(0, 0);
   }
+
+  // Menu "Thêm" của thanh tab dưới (màn hình nhỏ)
+  function setNavOpen(open) {
+    $('.nav').classList.toggle('open', open);
+    $('#navMore').setAttribute('aria-expanded', open);
+  }
+  $('#navMore').onclick = () => setNavOpen(!$('.nav').classList.contains('open'));
+  document.addEventListener('click', (e) => { if (!e.target.closest('.nav')) setNavOpen(false); });
 
   document.addEventListener('keydown', (e) => keyHandler && keyHandler(e));
   document.addEventListener('click', (e) => {
