@@ -72,15 +72,28 @@
   const starBtn = (id, label = false) => `<button class="btn icon star ${label ? 'label' : ''}" data-star="${esc(id)}"></button>`;
 
   // ---------- Tiện ích ----------
+  // Giọng đọc tiếng Phổ thông: ưu tiên zh-CN, tránh giọng Quảng Đông / Đài Loan
+  function zhVoice() {
+    const vs = speechSynthesis.getVoices();
+    const norm = (v) => v.lang.replace('_', '-').toLowerCase();
+    return vs.find((v) => norm(v) === 'zh-cn') ||
+      vs.find((v) => /^(zh|cmn)/.test(norm(v)) && !/hk|tw|yue/.test(norm(v) + v.name.toLowerCase())) || null;
+  }
+  let lastSpeak = { text: '', at: 0 };
   function speak(text) {
     if (!('speechSynthesis' in window) || !text) return;
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const now = Date.now();
+    if (text === lastSpeak.text && now - lastSpeak.at < 600) return; // bỏ lần bấm/gọi trùng
+    lastSpeak = { text, at: now };
+    // Một chữ đứng riêng dễ bị bộ đọc coi là "đánh vần" và đọc 2 lần → thêm dấu câu
+    const u = new SpeechSynthesisUtterance(hanChars(text).length === 1 && text.length === 1 ? text + '。' : text);
     u.lang = 'zh-CN';
     u.rate = 0.85;
-    const voice = speechSynthesis.getVoices().find((v) => /^zh/i.test(v.lang));
+    const voice = zhVoice();
     if (voice) u.voice = voice;
-    speechSynthesis.speak(u);
+    const go = () => speechSynthesis.speak(u);
+    // cancel() rồi speak() ngay lập tức làm một số bộ đọc trên Linux phát lặp → đợi một nhịp
+    if (speechSynthesis.speaking || speechSynthesis.pending) { speechSynthesis.cancel(); setTimeout(go, 80); } else go();
   }
 
   const cssVar = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
@@ -245,7 +258,8 @@
     const comp = (p) => `<div class="comp">
         <span class="hanzi">${esc(p.ch)}</span>
         <div>${p.radical ? `<b>Bộ ${esc(p.radical.name)}</b> <span class="muted">${esc(p.radical.meaning)}</span>` : `<b>${esc((p.hv || '').toUpperCase() || p.ch)}</b>`}
-        <small class="muted">${[p.pinyin, p.en && `EN: ${p.en}`].filter(Boolean).map(esc).join(' · ')}</small></div>
+        <small class="muted">${p.pinyin ? `<span class="pinyin sm">${esc(p.pinyin)}</span>` : ''}${p.say !== p.ch ? ` (đọc như ${esc(p.say)})` : ''}${p.en ? ` · EN: ${esc(p.en)}` : ''}</small></div>
+        ${p.pinyin ? speakBtn(p.say) : ''}
         ${a.semantic === p.ch ? '<span class="tag sem">chỉ nghĩa</span>' : a.phonetic === p.ch ? '<span class="tag pho">chỉ âm</span>' : ''}
       </div>`;
     return `<div class="char-analysis">
@@ -256,7 +270,7 @@
           <span>${a.meaning.text ? (a.meaning.lang === 'en' ? `<span class="muted">EN:</span> ${esc(a.meaning.text)}` : esc(a.meaning.text)) : ''}</span></div>
         </div>
         <p class="row wrap small">
-          ${a.radical ? `<span class="pill">Bộ thủ: <b>${esc(a.radical.ch)}</b> ${a.radical.radical ? esc(`${a.radical.radical.name} – ${a.radical.radical.meaning}`) : esc(a.radical.hv)}</span>` : ''}
+          ${a.radical ? `<span class="pill">Bộ thủ: <b>${esc(a.radical.ch)}</b>${a.radical.pinyin ? ` <span class="pinyin sm">${esc(a.radical.pinyin)}</span>` : ''} ${a.radical.radical ? esc(`${a.radical.radical.name} – ${a.radical.radical.meaning}`) : esc(a.radical.hv)}${a.radical.pinyin ? ' ' + speakBtn(a.radical.say) : ''}</span>` : ''}
           ${a.type ? `<span class="pill">Loại chữ: <b>${esc(a.type)}</b></span>` : ''}
         </p>
         ${a.summary ? `<p>${esc(a.summary)}</p>` : ''}
@@ -322,7 +336,7 @@
 
         <div class="card">
           <h3>🔗 Từ đi kèm</h3>
-          ${related.length ? `<div class="words">${related.map(({ via, card }) => `<a href="${wordLink(card)}" class="word"><span class="hanzi">${esc(card.hanzi)}</span><small>${esc(card.pinyin)} · ${esc(card.meaning)}</small><small class="muted">chứa ${esc(via)} · ${esc(card.deck)}</small></a>`).join('')}</div>`
+          ${related.length ? `<div class="words">${related.map(({ via, card }) => `<div class="word"><a href="${wordLink(card)}"><span class="hanzi">${esc(card.hanzi)}</span><small class="pinyin sm">${esc(card.pinyin)}</small><small>${esc(card.meaning)}</small><small class="muted">chứa ${esc(via)} · ${esc(card.deck)}</small></a>${speakBtn(card.hanzi)}</div>`).join('')}</div>`
             : '<p class="muted">Chưa có từ đi kèm trong kho từ vựng.</p>'}
         </div>
       </section>`;
@@ -758,7 +772,7 @@
       $('#info').innerHTML = `
         ${charAnalysisHTML(Lexicon.analyzeChar(ch), false)}
         <div class="row wrap">${speakBtn(ch)}${card ? starBtn(card.id) + `<a class="btn" href="${wordLink(card)}">🔎 Chi tiết từ</a>` : ''}<a class="btn" href="#/write?w=${encodeURIComponent(ch)}">✍️ Luyện viết</a></div>
-        ${words.length ? `<h4>Từ có chứa chữ này</h4><div class="words">${words.map((c) => `<a href="${wordLink(c)}" class="word"><span class="hanzi">${esc(c.hanzi)}</span><small>${esc(c.pinyin)} · ${esc(c.meaning)}</small></a>`).join('')}</div>` : ''}`;
+        ${words.length ? `<h4>Từ có chứa chữ này</h4><div class="words">${words.map((c) => `<div class="word"><a href="${wordLink(c)}"><span class="hanzi">${esc(c.hanzi)}</span><small class="pinyin sm">${esc(c.pinyin)}</small><small>${esc(c.meaning)}</small></a>${speakBtn(c.hanzi)}</div>`).join('')}</div>` : ''}`;
       updateStudyUI();
     }
 

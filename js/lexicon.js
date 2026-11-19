@@ -41,7 +41,8 @@ const Lexicon = (() => {
       ch,
       radical: rad ? { name: rad[0], meaning: rad[1] } : null,
       hv: hanViet(ch),
-      pinyin: info?.p || '',
+      pinyin: RADICAL_PINYIN[ch] || info?.p || '',
+      say: RADICAL_SAY[ch] || ch, // chữ dùng để phát âm
       en: info ? firstDef(info.d) : '',
     };
   }
